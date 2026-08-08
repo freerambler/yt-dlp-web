@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>💾🟢YTDownload</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #0f0f13; color: #e0e0e0; font-family: 'Segoe UI', sans-serif; min-height: 100vh; }
+.header { background: #1a1a24; border-bottom: 1px solid #ff0000aa; padding: 16px 24px; display: flex; align-items: center; gap: 12px; }
+.header svg { color: #ff0000; }
+.header h1 { font-size: 1.3rem; color: #fff; letter-spacing: 1px; }
+.header span { margin-left: auto; color: #888; font-size: 0.85rem; }
+.container { max-width: 900px; margin: 32px auto; padding: 0 16px; }
+.card { background: #1a1a24; border: 1px solid #2a2a3a; border-radius: 12px; padding: 24px; margin-bottom: 24px; }
+.card h2 { font-size: 1rem; color: #aaa; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 1px; }
+.input-row { display: flex; gap: 10px; }
+.input-row input { flex: 1; background: #0f0f18; border: 1px solid #333; border-radius: 8px; padding: 12px 16px; color: #fff; font-size: 1rem; outline: none; transition: border 0.2s; }
+.input-row input:focus { border-color: #ff0000; }
+.btn { background: #ff0000; color: #fff; border: none; border-radius: 8px; padding: 12px 24px; font-size: 1rem; cursor: pointer; transition: background 0.2s, transform 0.1s; white-space: nowrap; }
+.btn:hover { background: #cc0000; }
+.btn:active { transform: scale(0.97); }
+.btn:disabled { background: #444; cursor: not-allowed; }
+.btn-sm { padding: 6px 14px; font-size: 0.82rem; border-radius: 6px; }
+.btn-green { background: #1a7a1a; }
+.btn-green:hover { background: #145214; }
+.btn-danger { background: #5a1a1a; }
+.btn-danger:hover { background: #7a2020; }
+.queue { display: flex; flex-direction: column; gap: 12px; }
+.task { background: #0f0f18; border: 1px solid #2a2a3a; border-radius: 10px; padding: 16px; }
+.task-title { font-size: 0.95rem; color: #ddd; max-width: 70%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.badge { font-size: 0.75rem; padding: 3px 10px; border-radius: 20px; font-weight: 600; }
+.badge-downloading { background: #1a3a6a; color: #6ab4ff; }
+.badge-done { background: #1a4a1a; color: #6aff6a; }
+.badge-error { background: #4a1a1a; color: #ff6a6a; }
+.badge-pending { background: #2a2a1a; color: #ffcc6a; }
+.progress-bar { height: 6px; background: #2a2a3a; border-radius: 3px; overflow: hidden; margin-bottom: 6px; }
+.progress-fill { height: 100%; background: linear-gradient(90deg, #ff0000, #ff6600); border-radius: 3px; transition: width 0.3s; }
+.task-meta { font-size: 0.78rem; color: #666; display: flex; gap: 16px; }
+.files-list { display: flex; flex-direction: column; gap: 8px; }
+.file-item { display: flex; align-items: center; gap: 10px; background: #0f0f18; border: 1px solid #2a2a3a; border-radius: 8px; padding: 12px 16px; }
+.file-icon { color: #ff4444; font-size: 1.2rem; }
+.file-name { flex: 1; font-size: 0.9rem; color: #ccc; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.file-channel { color: #6ab4ff; font-size: 0.78rem; white-space: nowrap; }
+.file-size { color: #666; font-size: 0.8rem; white-space: nowrap; }
+.file-actions { display: flex; gap: 6px; }
+.empty { color: #555; text-align: center; padding: 24px; font-size: 0.9rem; }
+.toast { position: fixed; bottom: 24px; right: 24px; background: #1a4a1a; color: #6aff6a; border: 1px solid #2a6a2a; border-radius: 8px; padding: 12px 20px; font-size: 0.9rem; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 999; }
+.toast.show { opacity: 1; }
+.toast.error { background: #4a1a1a; color: #ff6a6a; border-color: #6a2a2a; }
+.disk-bar-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.85rem; color: #aaa; }
+.disk-bar-right { color: #fff; font-weight: 600; }
+.disk-bar-track { height: 12px; background: #0a1528; border-radius: 3px; overflow: hidden; margin-bottom: 12px; }
+.disk-bar-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease, background 0.5s ease; }
+.disk-folders { display: flex; gap: 32px; font-size: 0.85rem; color: #888; }
+.disk-folders span { color: #ccc; }
+</style>
+</head>
+<body>
+<div class="header">
+<svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+<h1>YT Pieces of shit Downloader</h1>
+<span id="user-label">Всратая качалка ненужной и неинтересной ебанины</span>
+</div>
+<div class="container">
+<div class="card">
+<h2>Новая загрузка</h2>
+<div class="input-row">
+<input type="text" id="url-input" placeholder="Вставь ссылку на YouTube видео..." />
+<button class="btn" id="dl-btn" onclick="startDownload()">▶ Скачать</button>
+</div>
+</div>
+<div class="card">
+<h2>⚡️Очередь загрузок</h2>
+<div class="queue" id="queue"><div class="empty">Нет активных загрузок</div></div>
+</div>
+<div class="card">
+<h2>
+  ✨Готовые файлы
+  <button class="btn btn-sm btn-green" onclick="downloadAllFiles()" style="margin-left:12px">⬇ Скачать всё</button>
+  <button class="btn btn-sm btn-danger" onclick="deleteAllFiles(this)" style="margin-left:6px">🗑 Удалить всё</button>
+</h2>
+<div class="files-list" id="files-list"><div class="empty">Нет файлов</div></div>
+</div>
+<div class="card">
+<h2>📡Собранные ссылки <button class="btn btn-sm" onclick="runCollector()" id="collect-btn" style="margin-left:12px">🔄 Собрать</button> <button class="btn btn-sm btn-danger" onclick="clearCollected()" style="margin-left:6px">🗑 Очистить</button></h2>
+<div class="files-list" id="collected-list"><div class="empty">Нажми «Собрать»</div></div>
+</div>
+<div class="card" id="disk-card">
+<h2>💽Дисковое пространство</h2>
+<div id="disk-stats" class="empty">Загрузка...</div>
+</div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+const activeTasks = {};
+let pollInterval = null;
+let thumbnails = {};
+let isDownloadingAll = false;
+function showToast(msg, isError=false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (isError ? ' error' : '');
+  setTimeout(() => t.className = 'toast', 3000);
+}
+function formatSize(bytes) {
+  if (bytes > 1073741824) return (bytes/1073741824).toFixed(2) + ' GB';
+  if (bytes > 1048576) return (bytes/1048576).toFixed(1) + ' MB';
+  return (bytes/1024).toFixed(0) + ' KB';
+}
+async function getYouTubeThumbnail(url) {
+  let vid = url.split('v=')[1];
+  if (!vid) vid = url.split('&')[0].split('t=')[1];
+  if (!vid) return null;
+  vid = vid.replace(/\?.*$/, '');
+  if (thumbnails[vid]) {
+    const cached = thumbnails[vid];
+    if (Date.now() - cached.timestamp < 60000) return cached.url;
+  }
+  try {
+    const r = await fetch(`https://img.youtube.com/vi/${vid}/maxresdefault.jpg`);
+    if (!r.ok) throw new Error('No thumbnail');
+    const blob = await r.blob();
+    const url2 = URL.createObjectURL(blob);
+    thumbnails[vid] = {url: url2, timestamp: Date.now()};
+    return url2;
+  } catch(e) {
+    try {
+      const r2 = await fetch(`https://img.youtube.com/vi/${vid}/hqdefault.jpg`);
+      if (!r2.ok) throw new Error('No thumbnail');
+      const blob2 = await r2.blob();
+      const url3 = URL.createObjectURL(blob2);
+      thumbnails[vid] = {url: url3, timestamp: Date.now()};
+      return url3;
+    } catch(e2) {
+      return null;
+    }
+  }
+}
+async function startDownload() {
+  const url = document.getElementById('url-input').value.trim();
+  if (!url) { showToast('Введи ссылку!', true); return; }
+  const thumbnailUrl = await getYouTubeThumbnail(url);
+  const btn = document.getElementById('dl-btn');
+  btn.disabled = true;
+  try {
+    const r = await fetch('/download', {method:'POST', credentials: 'include', headers:{'Content-Type':'application/json'}, body: JSON.stringify({url})});
+    if (!r.ok) { const e = await r.json(); showToast(e.detail || 'Ошибка', true); return; }
+    const {task_id} = await r.json();
+    activeTasks[task_id] = {url, status:'pending', progress:0, title: url, thumbnail: thumbnailUrl};
+    document.getElementById('url-input').value = '';
+    renderQueue();
+    startPolling();
+    showToast('Загрузка добавлена в очередь');
+  } catch(e) { showToast('Ошибка соединения', true); }
+  finally { btn.disabled = false; }
+}
+function startPolling() {
+  if (pollInterval) return;
+  pollInterval = setInterval(pollTasks, 1500);
+}
+async function pollTasks() {
+  const ids = Object.keys(activeTasks).filter(id =>
+    ['pending','downloading'].includes(activeTasks[id].status)
+  );
+  if (!ids.length) {
+    clearInterval(pollInterval);
+    pollInterval = null;
+    renderQueue();
+    loadFiles();
+    return;
+  }
+  for (const id of ids) {
+    try {
+      const r = await fetch('/status/' + id, {credentials: 'include'});
+      if (!r.ok) continue;
+      const data = await r.json();
+      activeTasks[id] = {...activeTasks[id], ...data};
+      if (data.status === 'done') loadFiles();
+    } catch(e) {}
+  }
+  renderQueue();
+}
+function renderQueue() {
+  const el = document.getElementById('queue');
+  const tasks = Object.entries(activeTasks);
+  if (!tasks.length) {
+    el.innerHTML = '<div class="empty">Нет активных загрузок</div>';
+    return;
+  }
+  el.innerHTML = tasks.reverse().map(([id, t]) => {
+    const badgeClass = {pending:'badge-pending', downloading:'badge-downloading', done:'badge-done', error:'badge-error'}[t.status] || '';
+    const badgeText = {pending:'Ожидание', downloading:'Загрузка', done:'Готово', error:'Ошибка'}[t.status] || t.status;
+    const title = t.title && t.title !== t.url ? t.title : (t.url || id);
+    let thumbnailHtml = '';
+    if (t.thumbnail) {
+      thumbnailHtml = `<div class="thumbnail-container" style="margin-bottom:12px;">
+        <img src="${t.thumbnail}" alt="Thumbnail" style="width:80px;height:45px;object-fit:cover;border-radius:6px;border:1px solid #333;">
+      </div>`;
+    }
+    return `<div class="task">
+      <div class="task-header">
+        ${thumbnailHtml}
+        <div class="task-title" title="${title}">${title}</div>
+        <span class="badge ${badgeClass}">${badgeText}</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${t.progress||0}%"></div></div>
+      <div class="task-meta">
+        <span>${t.progress||0}%</span>
+        ${t.speed ? '<span>⚡ ' + t.speed + '</span>' : ''}
+        ${t.eta ? '<span>⏱ ' + t.eta + '</span>' : ''}
+        ${t.error ? '<span style="color:#ff6a6a">⚠ ' + t.error + '</span>' : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+async function downloadAllFiles() {
+  if (isDownloadingAll) {
+    showToast('⏳ Уже идёт загрузка...');
+    return;
+  }
+  const container = document.getElementById('files-list');
+  const links = container.querySelectorAll('.file-actions a[download]');
+  if (!links.length) {
+    showToast('Нет файлов для скачивания', true);
+    return;
+  }
+  const btn = document.querySelector('.btn-green[onclick="downloadAllFiles()"]');
+  if (!btn) return;
+  isDownloadingAll = true;
+  btn.disabled = true;
+  btn.textContent = '⏳ 0/' + links.length;
+  let success = 0;
+  let failed = 0;
+  for (let i = 0; i < links.length; i++) {
+    const link = links[i];
+    try {
+      const a = document.createElement('a');
+      a.href = link.href;
+      a.download = link.download || true;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      success++;
+    } catch(e) {
+      failed++;
+      console.error('Download error:', e);
+    }
+    btn.textContent = '⏳ ' + (i + 1) + '/' + links.length;
+    if (i < links.length - 1) {
+      await new Promise(resolve => setTimeout(resolve, 3000));
+    }
+  }
+  isDownloadingAll = false;
+  btn.disabled = false;
+  btn.textContent = '⬇ Скачать всё';
+  if (failed === 0) {
+    showToast('✅ Все файлы (' + success + ') отправлены в загрузку');
+  } else {
+    showToast('⚠️ Загружено ' + success + ', ошибок ' + failed, true);
+  }
+}
+async function deleteAllFiles(btn) {
+  if (btn.dataset.confirm !== '1') {
+    btn.dataset.confirm = '1';
+    const original = btn.textContent;
+    btn.textContent = '⚠️ Нажми ещё раз';
+    btn.style.background = '#cc3300';
+    setTimeout(() => { btn.dataset.confirm = ''; btn.textContent = original; btn.style.background = ''; }, 3000);
+    return;
+  }
+  btn.dataset.confirm = '';
+  const container = document.getElementById('files-list');
+  const deleteButtons = container.querySelectorAll('.file-actions .btn-danger');
+  if (!deleteButtons.length) {
+    showToast('Нет файлов для удаления', true);
+    return;
+  }
+  btn.disabled = true;
+  btn.textContent = '⏳ 0/' + deleteButtons.length;
+  let deleted = 0;
+  let failed = 0;
+  for (let i = 0; i < deleteButtons.length; i++) {
+    const deleteBtn = deleteButtons[i];
+    try {
+      const fileItem = deleteBtn.closest('.file-item');
+      const fileNameElement = fileItem ? fileItem.querySelector('.file-name') : null;
+      const fileName = fileNameElement ? fileNameElement.textContent : 'unknown';
+      await deleteFileByName(fileName);
+      deleted++;
+    } catch(e) {
+      failed++;
+      console.error('Delete error:', e);
+    }
+    btn.textContent = '⏳ ' + (i + 1) + '/' + deleteButtons.length;
+    if (i < deleteButtons.length - 1) {
+      await new Promise(resolve => setTimeout(resolve, 300));
+    }
+  }
+  btn.disabled = false;
+  btn.textContent = '🗑 Удалить всё';
+  await loadFiles();
+  if (failed === 0) {
+    showToast('✅ Удалено ' + deleted + ' файлов');
+  } else {
+    showToast('⚠️ Удалено ' + deleted + ', ошибок ' + failed, true);
+  }
+}
+async function deleteFileByName(name) {
+  const response = await fetch('/files/' + encodeURIComponent(name), {
+    method: 'DELETE',
+    credentials: 'include'
+  });
+  if (!response.ok) {
+    throw new Error('Server error');
+  }
+  return true;
+}
+async function loadFiles() {
+  const r = await fetch('/files', {credentials: 'include'});
+  if (!r.ok) return;
+  const files = await r.json();
+  const el = document.getElementById('files-list');
+  if (!files.length) { el.innerHTML = '<div class="empty">Нет файлов</div>'; return; }
+  el.innerHTML = files.map(f => `
+    <div class="file-item">
+      <span class="file-icon">▶</span>
+      <span class="file-name" title="${f.name}">${f.name}</span>
+      <span class="file-size">${formatSize(f.size)}</span>
+      <div class="file-actions">
+        <a href="/download-file/${encodeURIComponent(f.name)}" download><button class="btn btn-sm btn-green">⬇ Скачать</button></a>
+        <button class="btn btn-sm btn-danger" onclick="deleteFile.call(this,'${f.name.replace(/'/g,"\\'")}');event.stopPropagation()">✕</button>
+      </div>
+    </div>`).join('');
+}
+async function deleteFile(name) {
+  const btn = event.currentTarget;
+  if (btn.dataset.confirm !== '1') {
+    btn.dataset.confirm = '1';
+    btn.textContent = '?';
+    btn.style.background = '#cc3300';
+    setTimeout(() => { btn.dataset.confirm = ''; btn.textContent = '✕'; btn.style.background = ''; }, 3000);
+    return;
+  }
+  try {
+    await deleteFileByName(name);
+    await loadFiles();
+    showToast('Файл удалён');
+  } catch(e) {
+    showToast('Ошибка при удалении', true);
+  }
+}
+async function loadDiskStats() {
+  try {
+    const r = await fetch('/disk-stats', {credentials: 'include'});
+    if (!r.ok) return;
+    const d = await r.json();
+    const usedPct = Math.round(d.used / d.total * 100);
+    const barColor = usedPct > 85 ? '#ff4444' : usedPct > 60 ? '#ff8800' : '#4da6ff';
+    const el = document.getElementById('disk-stats');
+    el.outerHTML = `<div id="disk-stats">
+      <div class="disk-bar-row">
+        <span class="disk-bar-label">Disk /</span>
+        <span class="disk-bar-right">${formatSize(d.used)} / ${formatSize(d.total)}</span>
+      </div>
+      <div class="disk-bar-track">
+        <div class="disk-bar-fill" style="width:${usedPct}%;background:${barColor}"></div>
+      </div>
+      <div class="disk-folders">
+        <span>⬇ YouTube: ${formatSize(d.downloads)}</span>
+      </div>
+    </div>`;
+  } catch(e) {}
+}
+async function runCollector() {
+  const btn = document.getElementById('collect-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Сбор...';
+  try {
+    await fetch('/collect-links', {method:'POST', credentials:'include'});
+    showToast('Сбор завершён');
+    loadCollectedLinks();
+  } catch(e) { showToast('Ошибка сбора', true); }
+  finally { btn.disabled = false; btn.textContent = '🔄 Собрать'; }
+}
+async function loadCollectedLinks() {
+  const r = await fetch('/collected-links', {credentials:'include'});
+  if (!r.ok) return;
+  const links = await r.json();
+  const el = document.getElementById('collected-list');
+  if (!links.length) { el.innerHTML = '<div class="empty">Нажми «Собрать»</div>'; return; }
+  el.innerHTML = links.map(l => {
+    const vid = l.url.split('v=')[1];
+    return `<div class="file-item">
+      <span class="file-icon">▶</span>
+      <span class="file-name" title="${l.title}">${l.title}</span>
+      <span class="file-channel">${l.channel || ''}</span>
+      <span class="file-size">${l.collected_at || ''}</span>
+      <div class="file-actions">
+        <button class="btn btn-sm btn-green" onclick="downloadCollected('${l.url}')">▶ Скачать</button>
+        <button class="btn btn-sm btn-danger" onclick="removeCollected('${vid}', this)">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+async function downloadCollected(url) {
+  document.getElementById('url-input').value = url;
+  startDownload();
+}
+async function removeCollected(vid, btn) {
+  await fetch('/collected-links/' + vid, {method:'DELETE', credentials:'include'});
+  btn.closest('.file-item').remove();
+}
+async function clearCollected() {
+  await fetch('/collected-links', {method:'DELETE', credentials:'include'});
+  loadCollectedLinks();
+  showToast('Список очищен');
+}
+loadCollectedLinks();
+document.getElementById('url-input').addEventListener('keydown', e => { if(e.key==='Enter') startDownload(); });
+loadFiles();
+loadDiskStats();
+setInterval(loadDiskStats, 30000);
+</script>
+</body>
+</html>
